@@ -154,17 +154,24 @@ export default function App() {
     setUploading(true)
     try {
       const bucket = type === 'sound' ? 'audios' : type === 'video' ? 'videos' : 'images'
-      const path = `${selected}/${Date.now()}_${file.name}`
+      // Normalize filename to avoid issues
+      const timestamp = Date.now()
+      const filename = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+      const path = `${selected}/${filename}`
 
+      console.log(`[Upload] Uploading to bucket ${bucket}, path: ${path}`)
+      
       const { error: uploadErr } = await supabase.storage.from(bucket).upload(path, file)
       if (uploadErr) {
         console.error(`Upload error to ${bucket}:`, uploadErr)
-        showToast(`Ошибка загрузки: bucket ${bucket} не найден. Создайте его в Supabase Storage.`, 'error')
+        showToast(`Ошибка загрузки: ${uploadErr.message || 'Неизвестная ошибка'}`, 'error')
         return
       }
 
       const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path)
       const publicUrl = (urlData as any)?.publicUrl
+      console.log(`[Upload] Public URL:`, publicUrl)
+      
       if (!publicUrl) {
         throw new Error('Не удалось получить публичный URL файла')
       }

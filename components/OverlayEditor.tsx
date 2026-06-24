@@ -213,10 +213,11 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
         <p className="mt-1 text-sm text-slate-400">Перетащите, измените размер (Shift = растяжение), поверните, обрежьте (Alt). Убирайте картинки за экран!</p>
       </div>
 
-      {/* Two overlapping screens */}
-      <div className="flex-1 relative overflow-hidden" ref={containerRef}>
-        {/* Background Screen - Big 16:9 (z-index lower) */}
+      {/* Stacked overlapping screens */}
+      <div className="flex-1 relative overflow-hidden rounded-2xl" ref={containerRef}>
+        {/* Background Screen - Big 16:9 (full size) */}
         <div className="absolute inset-0 rounded-2xl border-2 border-slate-500 bg-slate-950" style={{ aspectRatio: '16/9' }}>
+          {/* Main editing area */}
           <div className="absolute inset-0">
             {elements.map((element) => {
               const isSelected = selectedId === element.id;
@@ -285,14 +286,15 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
           <div className="absolute bottom-2 left-2 text-xs text-slate-400">Основной оверлей (16:9)</div>
         </div>
 
-        {/* Foreground Screen - Small 16:9 (z-index higher) - overlay on top */}
+        {/* Foreground Screen - Small 16:9 (75% size, centered at top) */}
         <div
-          className="absolute rounded-2xl border-2 border-cyan-500 bg-slate-950/80 backdrop-blur-sm"
+          className="absolute rounded-2xl border-2 border-cyan-500 bg-slate-950/90 backdrop-blur-sm"
           style={{
             aspectRatio: '16/9',
-            bottom: '2rem',
-            right: '2rem',
-            width: '30%',
+            top: '50%',
+            left: '50%',
+            width: '75%',
+            transform: 'translate(-50%, -50%)',
             zIndex: 10,
           }}
         >
@@ -316,7 +318,7 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
                       <div
                         className="flex h-full items-center justify-center p-1 text-center"
                         style={{
-                          fontSize: (element.textStyle?.fontSize || 16) * 0.6,
+                          fontSize: (element.textStyle?.fontSize || 16) * 0.75,
                           fontWeight: element.textStyle?.fontWeight || 'normal',
                           fontStyle: element.textStyle?.fontStyle || 'normal',
                           textDecoration: element.textStyle?.textDecoration || 'none',
@@ -335,7 +337,7 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
               );
             })}
           </div>
-          <div className="absolute bottom-1 left-2 text-xs text-cyan-300">Превью (16:9)</div>
+          <div className="absolute bottom-1 left-2 text-xs text-cyan-300">Превью (75% размера)</div>
         </div>
       </div>
     </div>
