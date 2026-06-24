@@ -1,1 +1,6 @@
-# grace-obs-overlay
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+};
