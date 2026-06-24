@@ -8,8 +8,8 @@ type Source = { id: string; type: string; properties: any }
 
 const DEFAULT_ELEMENT_SIZE = { w: 360, h: 202 }
 
-export default function App(){
-  const [rooms, setRooms] = useState<Room[]>([])
+export default function App(){  console.log('[App] Initializing...')
+    const [rooms, setRooms] = useState<Room[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [sources, setSources] = useState<Source[]>([])
   const [elements, setElements] = useState<RoomElement[]>([])
@@ -27,7 +27,14 @@ export default function App(){
     setTimeout(()=> setToasts(t => t.filter(x=>x.id!==id)), 4000)
   }
 
-  useEffect(()=>{ fetchRooms() }, [])
+  useEffect(()=>{
+    console.log('[App] useEffect: fetchRooms')
+    try {
+      fetchRooms()
+    } catch (err) {
+      console.error('[App] Error in fetchRooms:', err)
+    }
+  }, [])
 
   function getSupabaseErrorMessage(error: any, fallback: string){
     const message = error?.message || error?.code || String(error)
@@ -38,14 +45,21 @@ export default function App(){
   }
 
   async function fetchRooms(){
-    const { data, error } = await supabase.from('rooms').select('*').order('created_at', { ascending: false })
-    if (error) {
-      showToast(getSupabaseErrorMessage(error, 'Не удалось загрузить комнаты'),'error')
-      setRooms([])
-      return
+    console.log('[App] fetchRooms start')
+    try {
+      const { data, error } = await supabase.from('rooms').select('*').order('created_at', { ascending: false })
+      console.log('[App] fetchRooms response:', { data, error })
+      if (error) {
+        showToast(getSupabaseErrorMessage(error, 'Не удалось загрузить комнаты'),'error')
+        setRooms([])
+        return
+      }
+      setRooms((data as any) || [])
+      if(data && data.length && !selected) setSelected(data[0].id)
+    } catch (err) {
+      console.error('[App] fetchRooms error:', err)
+      showToast('Ошибка подключения к Supabase', 'error')
     }
-    setRooms((data as any) || [])
-    if(data && data.length && !selected) setSelected(data[0].id)
   }
 
   async function createRoom(){
@@ -214,6 +228,8 @@ export default function App(){
     if(error) showToast(getSupabaseErrorMessage(error, 'Ошибка воспроизведения'),'error')
   }
 
+  console.log('[App] Rendering, rooms:', rooms.length, 'selected:', selected)
+  
   return (<>
     <div className="min-h-screen bg-slate-900 text-white p-6">
       {/* Toasts container */}
