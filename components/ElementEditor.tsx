@@ -13,8 +13,17 @@ export default function ElementEditor({ element, onUpdate, onDelete }: ElementEd
   }
 
   const updateStyle = (style: Partial<TextStyle>) => {
+    const current = element.textStyle || {
+      fontSize: 16,
+      fontFamily: 'Inter',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textDecoration: 'none',
+      color: '#ffffff',
+      textAlign: 'center',
+    }
     onUpdate(element.id, {
-      textStyle: { ...element.textStyle, ...style } as TextStyle,
+      textStyle: { ...current, ...style } as TextStyle,
     })
   }
 
@@ -148,28 +157,40 @@ export default function ElementEditor({ element, onUpdate, onDelete }: ElementEd
 
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => updateStyle({ fontWeight: element.textStyle?.fontWeight === 'bold' ? 'normal' : 'bold' })}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                className={`flex-1 rounded-xl px-2 py-2 text-sm font-bold transition ${
                   element.textStyle?.fontWeight === 'bold' ? 'bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'
                 }`}
               >
                 Ж
               </button>
               <button
+                type="button"
                 onClick={() => updateStyle({ fontStyle: element.textStyle?.fontStyle === 'italic' ? 'normal' : 'italic' })}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm italic transition ${
+                className={`flex-1 rounded-xl px-2 py-2 text-sm italic transition ${
                   element.textStyle?.fontStyle === 'italic' ? 'bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'
                 }`}
               >
                 К
               </button>
               <button
+                type="button"
                 onClick={() => updateStyle({ textDecoration: element.textStyle?.textDecoration === 'underline' ? 'none' : 'underline' })}
-                className={`flex-1 rounded-xl px-3 py-2 text-sm underline transition ${
+                className={`flex-1 rounded-xl px-2 py-2 text-sm underline transition ${
                   element.textStyle?.textDecoration === 'underline' ? 'bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'
                 }`}
               >
                 П
+              </button>
+              <button
+                type="button"
+                onClick={() => updateStyle({ textDecoration: element.textStyle?.textDecoration === 'line-through' ? 'none' : 'line-through' })}
+                className={`flex-1 rounded-xl px-2 py-2 text-sm line-through transition ${
+                  element.textStyle?.textDecoration === 'line-through' ? 'bg-cyan-600' : 'bg-slate-700 hover:bg-slate-600'
+                }`}
+              >
+                З
               </button>
             </div>
           </>

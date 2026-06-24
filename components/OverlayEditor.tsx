@@ -120,6 +120,7 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
         if (!handle) return;
 
         if (alt) {
+          // Alt + drag = crop
           const percentX = (dx / element.size.w) * 100;
           const percentY = (dy / element.size.h) * 100;
           const crop = {
@@ -132,8 +133,15 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
           return;
         }
 
-        const next = computeHandleDelta(handle, dx, dy, action.startElement);
-        onUpdate(element.id, { position: { x: next.x, y: next.y }, size: { w: next.w, h: next.h } });
+        if (shift) {
+          // Shift + drag = stretch from handle (proportional resize)
+          const next = computeHandleDelta(handle, dx, dy, action.startElement);
+          onUpdate(element.id, { position: { x: next.x, y: next.y }, size: { w: next.w, h: next.h } });
+        } else {
+          // Normal drag = resize
+          const next = computeHandleDelta(handle, dx, dy, action.startElement);
+          onUpdate(element.id, { position: { x: next.x, y: next.y }, size: { w: next.w, h: next.h } });
+        }
       }
     }
 
@@ -199,84 +207,128 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-4 shadow-xl shadow-black/20">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-semibold text-white">Редактор оверлея</h2>
-            <p className="mt-1 text-sm text-slate-400">Перетащите, измените размер, поверните и обрежьте элементы в режиме превью.</p>
-          </div>
-          <div className="rounded-2xl bg-slate-900 px-3 py-2 text-sm text-slate-300">shift = привязка / alt = обрезка</div>
+    <div className="h-full flex flex-col">
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold text-white">Редактор оверлея</h2>
+          <p className="mt-1 text-sm text-slate-400">Перетащите, измените размер (Shift = растяжение), поверните, обрежьте (Alt).</p>
         </div>
-        <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/90 p-4" style={{ minHeight: 540 }}>
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 opacity-80" />
-          <div className="relative mx-auto h-full max-w-[1200px]" ref={containerRef}>
-            <div className="relative mx-auto rounded-3xl border border-slate-700 bg-slate-950/30" style={{ width: '100%', paddingTop: '56.25%' }}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="absolute inset-0 rounded-3xl border border-slate-600 bg-slate-950/20" />
-                <div className="absolute inset-8 rounded-3xl border-4 border-cyan-500/60 bg-slate-900/60" />
-              </div>
-              <div className="absolute inset-0">
-                {elements.map((element) => {
-                  const isSelected = selectedId === element.id;
-                  const boxStyle: React.CSSProperties = {
-                    left: element.position.x,
-                    top: element.position.y,
-                    width: element.size.w,
-                    height: element.size.h,
-                    transform: `rotate(${element.rotation}deg)`,
-                    transformOrigin: 'center',
-                  };
-                  return (
-                    <div
-                      key={element.id}
-                      className={`absolute cursor-move rounded-2xl border p-1 transition ${isSelected ? 'border-cyan-400 bg-cyan-500/10 shadow-xl shadow-cyan-400/20' : 'border-transparent bg-slate-950/60'}`}
-                      style={boxStyle}
-                      onPointerDown={(event) => handleMoveStart(event, element)}
-                    >
-                      <div className="relative h-full w-full overflow-hidden rounded-xl" style={{ opacity: element.visible ? 1 : 0.35, clipPath: buildClip(element.crop) }}>
-                        {element.type === 'image' && (
-                          <img src={element.src} alt={element.title || 'Image'} className="h-full w-full object-cover" />
-                        )}
-                        {element.type === 'text' && (
-                          <div className="flex h-full items-center justify-center p-4 text-center text-sm font-semibold text-white">
-                            {element.content || 'Text'}
-                          </div>
-                        )}
-                        {element.type === 'video' && (
-                          <div className="flex h-full items-center justify-center bg-black text-white">Видео</div>
-                        )}
-                        {element.type === 'youtube' && (
-                          <div className="flex h-full items-center justify-center bg-black text-white">YouTube</div>
-                        )}
-                        {element.type === 'sound' && (
-                          <div className="flex h-full items-center justify-center bg-slate-800 text-slate-200">Аудио</div>
-                        )}
-                      </div>
-                      {isSelected && (
-                        <>
-                          <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 flex cursor-grab items-center gap-2">
-                            <div className="h-0.5 w-14 bg-cyan-400/80" />
-                            <div
-                              onPointerDown={(event) => handleRotateStart(event, element)}
-                              className="h-4 w-4 rounded-full border border-cyan-300 bg-cyan-500 shadow-lg shadow-cyan-500/30"
-                            />
-                          </div>
-                          {handles.map((handle) => (
-                            <button
-                              key={handle.key}
-                              type="button"
-                              onPointerDown={(event) => handleResizeStart(event, element, handle.key)}
-                              className="absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400 border border-white/20"
-                              style={{ left: handle.left, top: handle.top }}
-                            />
-                          ))}
-                        </>
+      </div>
+
+      <div className="flex-1 flex gap-4 overflow-hidden">
+        {/* Main Overlay Screen - 16:9 */}
+        <div className="flex-1 flex flex-col">
+          <div className="mb-2 text-xs font-medium text-slate-400">Основной оверлей (16:9)</div>
+          <div className="flex-1 relative overflow-hidden rounded-2xl border-2 border-cyan-500 bg-slate-950" ref={containerRef}>
+            <div className="absolute inset-0" style={{ aspectRatio: '16/9' }}>
+              {elements.map((element) => {
+                const isSelected = selectedId === element.id;
+                const boxStyle: React.CSSProperties = {
+                  left: element.position.x,
+                  top: element.position.y,
+                  width: element.size.w,
+                  height: element.size.h,
+                  transform: `rotate(${element.rotation}deg)`,
+                  transformOrigin: 'center',
+                };
+                return (
+                  <div
+                    key={element.id}
+                    className={`absolute cursor-move rounded-lg border p-1 transition ${
+                      isSelected ? 'border-cyan-400 bg-cyan-500/20 shadow-lg shadow-cyan-400/30' : 'border-slate-700 hover:border-slate-500'
+                    }`}
+                    style={boxStyle}
+                    onPointerDown={(event) => handleMoveStart(event, element)}
+                  >
+                    <div className="relative h-full w-full overflow-hidden rounded-md" style={{ opacity: element.visible ? 1 : 0.3, clipPath: buildClip(element.crop) }}>
+                      {element.type === 'image' && <img src={element.src} alt={element.title || 'Image'} className="h-full w-full object-cover" />}
+                      {element.type === 'text' && (
+                        <div
+                          className="flex h-full items-center justify-center p-2 text-center"
+                          style={{
+                            fontSize: element.textStyle?.fontSize || 16,
+                            fontWeight: element.textStyle?.fontWeight || 'normal',
+                            fontStyle: element.textStyle?.fontStyle || 'normal',
+                            textDecoration: element.textStyle?.textDecoration || 'none',
+                            color: element.textStyle?.color || '#ffffff',
+                            fontFamily: element.textStyle?.fontFamily || 'Inter',
+                          }}
+                        >
+                          {element.content || 'Text'}
+                        </div>
                       )}
+                      {element.type === 'video' && <div className="flex h-full items-center justify-center bg-black text-white text-sm">Видео</div>}
+                      {element.type === 'youtube' && <div className="flex h-full items-center justify-center bg-black text-white text-sm">YouTube</div>}
+                      {element.type === 'sound' && <div className="flex h-full items-center justify-center bg-slate-800 text-slate-200 text-sm">🔊 Звук</div>}
                     </div>
-                  );
-                })}
-              </div>
+                    {isSelected && (
+                      <>
+                        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 flex cursor-grab items-center gap-2">
+                          <div className="h-0.5 w-12 bg-cyan-400" />
+                          <div
+                            onPointerDown={(event) => handleRotateStart(event, element)}
+                            className="h-3 w-3 rounded-full border border-cyan-300 bg-cyan-500"
+                          />
+                        </div>
+                        {handles.map((handle) => (
+                          <button
+                            key={handle.key}
+                            type="button"
+                            onPointerDown={(event) => handleResizeStart(event, element, handle.key)}
+                            className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400 border border-white/20"
+                            style={{ left: handle.left, top: handle.top }}
+                          />
+                        ))}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Preview Screen - 16:9 smaller */}
+        <div className="w-80 flex flex-col">
+          <div className="mb-2 text-xs font-medium text-slate-400">Превью оверлея</div>
+          <div className="flex-1 relative overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-950">
+            <div className="absolute inset-0" style={{ aspectRatio: '16/9' }}>
+              {elements.map((element) => {
+                const boxStyle: React.CSSProperties = {
+                  left: element.position.x,
+                  top: element.position.y,
+                  width: element.size.w,
+                  height: element.size.h,
+                  transform: `rotate(${element.rotation}deg)`,
+                  transformOrigin: 'center',
+                  pointerEvents: 'none',
+                };
+                return (
+                  <div key={element.id} className="absolute" style={boxStyle}>
+                    <div className="relative h-full w-full overflow-hidden rounded-sm" style={{ opacity: element.visible ? 1 : 0.2, clipPath: buildClip(element.crop) }}>
+                      {element.type === 'image' && <img src={element.src} alt={element.title || 'Image'} className="h-full w-full object-cover" />}
+                      {element.type === 'text' && (
+                        <div
+                          className="flex h-full items-center justify-center p-1 text-center text-xs"
+                          style={{
+                            fontSize: (element.textStyle?.fontSize || 16) * 0.5,
+                            fontWeight: element.textStyle?.fontWeight || 'normal',
+                            fontStyle: element.textStyle?.fontStyle || 'normal',
+                            textDecoration: element.textStyle?.textDecoration || 'none',
+                            color: element.textStyle?.color || '#ffffff',
+                            fontFamily: element.textStyle?.fontFamily || 'Inter',
+                          }}
+                        >
+                          {element.content || 'Text'}
+                        </div>
+                      )}
+                      {element.type === 'video' && <div className="flex h-full items-center justify-center bg-black" />}
+                      {element.type === 'youtube' && <div className="flex h-full items-center justify-center bg-black" />}
+                      {element.type === 'sound' && <div className="flex h-full items-center justify-center bg-slate-800" />}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
