@@ -208,129 +208,134 @@ export default function OverlayEditor({ elements, selectedId, onSelect, onUpdate
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-white">Редактор оверлея</h2>
-          <p className="mt-1 text-sm text-slate-400">Перетащите, измените размер (Shift = растяжение), поверните, обрежьте (Alt).</p>
-        </div>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-white">Редактор оверлея</h2>
+        <p className="mt-1 text-sm text-slate-400">Перетащите, измените размер (Shift = растяжение), поверните, обрежьте (Alt). Убирайте картинки за экран!</p>
       </div>
 
-      <div className="flex-1 flex gap-4 overflow-hidden">
-        {/* Main Overlay Screen - 16:9 */}
-        <div className="flex-1 flex flex-col">
-          <div className="mb-2 text-xs font-medium text-slate-400">Основной оверлей (16:9)</div>
-          <div className="flex-1 relative overflow-hidden rounded-2xl border-2 border-cyan-500 bg-slate-950" ref={containerRef}>
-            <div className="absolute inset-0" style={{ aspectRatio: '16/9' }}>
-              {elements.map((element) => {
-                const isSelected = selectedId === element.id;
-                const boxStyle: React.CSSProperties = {
-                  left: element.position.x,
-                  top: element.position.y,
-                  width: element.size.w,
-                  height: element.size.h,
-                  transform: `rotate(${element.rotation}deg)`,
-                  transformOrigin: 'center',
-                };
-                return (
-                  <div
-                    key={element.id}
-                    className={`absolute cursor-move rounded-lg border p-1 transition ${
-                      isSelected ? 'border-cyan-400 bg-cyan-500/20 shadow-lg shadow-cyan-400/30' : 'border-slate-700 hover:border-slate-500'
-                    }`}
-                    style={boxStyle}
-                    onPointerDown={(event) => handleMoveStart(event, element)}
-                  >
-                    <div className="relative h-full w-full overflow-hidden rounded-md" style={{ opacity: element.visible ? 1 : 0.3, clipPath: buildClip(element.crop) }}>
-                      {element.type === 'image' && <img src={element.src} alt={element.title || 'Image'} className="h-full w-full object-cover" />}
-                      {element.type === 'text' && (
-                        <div
-                          className="flex h-full items-center justify-center p-2 text-center"
-                          style={{
-                            fontSize: element.textStyle?.fontSize || 16,
-                            fontWeight: element.textStyle?.fontWeight || 'normal',
-                            fontStyle: element.textStyle?.fontStyle || 'normal',
-                            textDecoration: element.textStyle?.textDecoration || 'none',
-                            color: element.textStyle?.color || '#ffffff',
-                            fontFamily: element.textStyle?.fontFamily || 'Inter',
-                          }}
-                        >
-                          {element.content || 'Text'}
-                        </div>
-                      )}
-                      {element.type === 'video' && <div className="flex h-full items-center justify-center bg-black text-white text-sm">Видео</div>}
-                      {element.type === 'youtube' && <div className="flex h-full items-center justify-center bg-black text-white text-sm">YouTube</div>}
-                      {element.type === 'sound' && <div className="flex h-full items-center justify-center bg-slate-800 text-slate-200 text-sm">🔊 Звук</div>}
-                    </div>
-                    {isSelected && (
-                      <>
-                        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 flex cursor-grab items-center gap-2">
-                          <div className="h-0.5 w-12 bg-cyan-400" />
-                          <div
-                            onPointerDown={(event) => handleRotateStart(event, element)}
-                            className="h-3 w-3 rounded-full border border-cyan-300 bg-cyan-500"
-                          />
-                        </div>
-                        {handles.map((handle) => (
-                          <button
-                            key={handle.key}
-                            type="button"
-                            onPointerDown={(event) => handleResizeStart(event, element, handle.key)}
-                            className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400 border border-white/20"
-                            style={{ left: handle.left, top: handle.top }}
-                          />
-                        ))}
-                      </>
+      {/* Two overlapping screens */}
+      <div className="flex-1 relative overflow-hidden" ref={containerRef}>
+        {/* Background Screen - Big 16:9 (z-index lower) */}
+        <div className="absolute inset-0 rounded-2xl border-2 border-slate-500 bg-slate-950" style={{ aspectRatio: '16/9' }}>
+          <div className="absolute inset-0">
+            {elements.map((element) => {
+              const isSelected = selectedId === element.id;
+              const boxStyle: React.CSSProperties = {
+                left: element.position.x,
+                top: element.position.y,
+                width: element.size.w,
+                height: element.size.h,
+                transform: `rotate(${element.rotation}deg)`,
+                transformOrigin: 'center',
+              };
+              return (
+                <div
+                  key={element.id}
+                  className={`absolute cursor-move rounded-lg border p-1 transition ${
+                    isSelected ? 'border-cyan-400 bg-cyan-500/20 shadow-lg shadow-cyan-400/30' : 'border-slate-700 hover:border-slate-500'
+                  }`}
+                  style={boxStyle}
+                  onPointerDown={(event) => handleMoveStart(event, element)}
+                >
+                  <div className="relative h-full w-full overflow-hidden rounded-md" style={{ opacity: element.visible ? 1 : 0.3, clipPath: buildClip(element.crop) }}>
+                    {element.type === 'image' && <img src={element.src} alt={element.title || 'Image'} className="h-full w-full object-cover" />}
+                    {element.type === 'text' && (
+                      <div
+                        className="flex h-full items-center justify-center p-2 text-center"
+                        style={{
+                          fontSize: element.textStyle?.fontSize || 16,
+                          fontWeight: element.textStyle?.fontWeight || 'normal',
+                          fontStyle: element.textStyle?.fontStyle || 'normal',
+                          textDecoration: element.textStyle?.textDecoration || 'none',
+                          color: element.textStyle?.color || '#ffffff',
+                          fontFamily: element.textStyle?.fontFamily || 'Inter',
+                        }}
+                      >
+                        {element.content || 'Text'}
+                      </div>
                     )}
+                    {element.type === 'video' && <div className="flex h-full items-center justify-center bg-black text-white text-sm">Видео</div>}
+                    {element.type === 'youtube' && <div className="flex h-full items-center justify-center bg-black text-white text-sm">YouTube</div>}
+                    {element.type === 'sound' && <div className="flex h-full items-center justify-center bg-slate-800 text-slate-200 text-sm">🔊 Звук</div>}
                   </div>
-                );
-              })}
-            </div>
+                  {isSelected && (
+                    <>
+                      <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 flex cursor-grab items-center gap-2">
+                        <div className="h-0.5 w-12 bg-cyan-400" />
+                        <div
+                          onPointerDown={(event) => handleRotateStart(event, element)}
+                          className="h-3 w-3 rounded-full border border-cyan-300 bg-cyan-500"
+                        />
+                      </div>
+                      {handles.map((handle) => (
+                        <button
+                          key={handle.key}
+                          type="button"
+                          onPointerDown={(event) => handleResizeStart(event, element, handle.key)}
+                          className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400 border border-white/20"
+                          style={{ left: handle.left, top: handle.top }}
+                        />
+                      ))}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
+          <div className="absolute bottom-2 left-2 text-xs text-slate-400">Основной оверлей (16:9)</div>
         </div>
 
-        {/* Preview Screen - 16:9 smaller */}
-        <div className="w-80 flex flex-col">
-          <div className="mb-2 text-xs font-medium text-slate-400">Превью оверлея</div>
-          <div className="flex-1 relative overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-950">
-            <div className="absolute inset-0" style={{ aspectRatio: '16/9' }}>
-              {elements.map((element) => {
-                const boxStyle: React.CSSProperties = {
-                  left: element.position.x,
-                  top: element.position.y,
-                  width: element.size.w,
-                  height: element.size.h,
-                  transform: `rotate(${element.rotation}deg)`,
-                  transformOrigin: 'center',
-                  pointerEvents: 'none',
-                };
-                return (
-                  <div key={element.id} className="absolute" style={boxStyle}>
-                    <div className="relative h-full w-full overflow-hidden rounded-sm" style={{ opacity: element.visible ? 1 : 0.2, clipPath: buildClip(element.crop) }}>
-                      {element.type === 'image' && <img src={element.src} alt={element.title || 'Image'} className="h-full w-full object-cover" />}
-                      {element.type === 'text' && (
-                        <div
-                          className="flex h-full items-center justify-center p-1 text-center text-xs"
-                          style={{
-                            fontSize: (element.textStyle?.fontSize || 16) * 0.5,
-                            fontWeight: element.textStyle?.fontWeight || 'normal',
-                            fontStyle: element.textStyle?.fontStyle || 'normal',
-                            textDecoration: element.textStyle?.textDecoration || 'none',
-                            color: element.textStyle?.color || '#ffffff',
-                            fontFamily: element.textStyle?.fontFamily || 'Inter',
-                          }}
-                        >
-                          {element.content || 'Text'}
-                        </div>
-                      )}
-                      {element.type === 'video' && <div className="flex h-full items-center justify-center bg-black" />}
-                      {element.type === 'youtube' && <div className="flex h-full items-center justify-center bg-black" />}
-                      {element.type === 'sound' && <div className="flex h-full items-center justify-center bg-slate-800" />}
-                    </div>
+        {/* Foreground Screen - Small 16:9 (z-index higher) - overlay on top */}
+        <div
+          className="absolute rounded-2xl border-2 border-cyan-500 bg-slate-950/80 backdrop-blur-sm"
+          style={{
+            aspectRatio: '16/9',
+            bottom: '2rem',
+            right: '2rem',
+            width: '30%',
+            zIndex: 10,
+          }}
+        >
+          <div className="absolute inset-0">
+            {elements.map((element) => {
+              if (!element.visible) return null;
+              const boxStyle: React.CSSProperties = {
+                left: element.position.x,
+                top: element.position.y,
+                width: element.size.w,
+                height: element.size.h,
+                transform: `rotate(${element.rotation}deg)`,
+                transformOrigin: 'center',
+                pointerEvents: 'none',
+              };
+              return (
+                <div key={element.id} className="absolute" style={boxStyle}>
+                  <div className="relative h-full w-full overflow-hidden rounded-sm" style={{ clipPath: buildClip(element.crop) }}>
+                    {element.type === 'image' && <img src={element.src} alt={element.title || 'Image'} className="h-full w-full object-cover" />}
+                    {element.type === 'text' && (
+                      <div
+                        className="flex h-full items-center justify-center p-1 text-center"
+                        style={{
+                          fontSize: (element.textStyle?.fontSize || 16) * 0.6,
+                          fontWeight: element.textStyle?.fontWeight || 'normal',
+                          fontStyle: element.textStyle?.fontStyle || 'normal',
+                          textDecoration: element.textStyle?.textDecoration || 'none',
+                          color: element.textStyle?.color || '#ffffff',
+                          fontFamily: element.textStyle?.fontFamily || 'Inter',
+                        }}
+                      >
+                        {element.content || 'Text'}
+                      </div>
+                    )}
+                    {element.type === 'video' && <div className="flex h-full items-center justify-center bg-black" />}
+                    {element.type === 'youtube' && <div className="flex h-full items-center justify-center bg-black" />}
+                    {element.type === 'sound' && <div className="flex h-full items-center justify-center bg-slate-800" />}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
+          <div className="absolute bottom-1 left-2 text-xs text-cyan-300">Превью (16:9)</div>
         </div>
       </div>
     </div>
